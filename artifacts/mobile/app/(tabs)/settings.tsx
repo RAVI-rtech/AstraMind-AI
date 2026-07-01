@@ -70,7 +70,7 @@ export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
-  const { settings, updateSetting, resetSettings } = useSettings();
+  const { settings, updateSetting } = useSettings();
   const { user, logout } = useAuth();
 
   function toggleSwitch(key: "voiceEnabled" | "hapticFeedback" | "streamingEnabled" | "autoSaveChats") {
@@ -189,13 +189,6 @@ export default function SettingsScreen() {
           <SettingRow icon="shield" label="Privacy Policy" onPress={() => {}} />
           <SettingRow icon="file-text" label="Terms of Service" onPress={() => {}} />
         </GlossyCard>
-
-        <GoldButton
-          label="Reset All Settings"
-          onPress={resetSettings}
-          variant="outline"
-          style={{ marginTop: 16 }}
-        />
 
         {user && (
           <GoldButton

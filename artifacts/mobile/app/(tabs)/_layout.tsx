@@ -22,7 +22,7 @@ export default function TabLayout() {
           borderTopWidth: 0,
           borderTopColor: colors.border,
           elevation: 0,
-          height: isWeb ? 84 : 60,
+          height: isWeb ? 96 : 72,
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -36,37 +36,48 @@ export default function TabLayout() {
               style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
             />
           ) : null,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "600",
+          letterSpacing: 0.5,
+          marginBottom: 4,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="message-circle" size={24} color={color} />,
+          tabBarLabel: "Message",
+          tabBarIcon: ({ color }) => <Feather name="message-circle" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="voice"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="mic" size={24} color={color} />,
+          tabBarLabel: "Voice",
+          tabBarIcon: ({ color }) => <Feather name="mic" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="image"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="image" size={24} color={color} />,
+          tabBarLabel: "Image",
+          tabBarIcon: ({ color }) => <Feather name="image" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="pdf"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="file-text" size={24} color={color} />,
+          tabBarLabel: "Docs",
+          tabBarIcon: ({ color }) => <Feather name="file-text" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="sliders" size={24} color={color} />,
+          tabBarLabel: "Settings",
+          tabBarIcon: ({ color }) => <Feather name="sliders" size={22} color={color} />,
         }}
       />
     </Tabs>
