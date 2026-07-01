@@ -1,0 +1,2 @@
+- [Asterix AI dual-backend architecture](asterix-ai-backend.md) — FastAPI (Python) backend lives in `backend/` alongside Node.js Express API in `artifacts/api-server/`; they are independent.
+- [Expo stub-first pattern](expo-stub-first.md) — AI calls stubbed in mobile contexts (AsyncStorage-only first build); backend wiring deferred to phase 2.
