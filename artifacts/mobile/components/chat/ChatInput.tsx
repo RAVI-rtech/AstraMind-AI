@@ -27,7 +27,7 @@ export function ChatInput({
   const [text, setText] = useState<string>("");
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom + 60;
 
   function handleSend() {
     const trimmed = text.trim();
