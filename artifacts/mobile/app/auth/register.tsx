@@ -75,7 +75,7 @@ export default function RegisterScreen() {
             Create Account
           </Text>
           <Text style={[Typography.body, { color: colors.mutedForeground, marginTop: 6, marginBottom: 32 }]}>
-            Join Asterix AI today
+            Join AstraMind AI today
           </Text>
 
           {([

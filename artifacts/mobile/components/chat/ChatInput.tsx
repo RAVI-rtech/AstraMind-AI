@@ -22,7 +22,7 @@ export function ChatInput({
   onSend,
   onVoice,
   isLoading = false,
-  placeholder = "Message Asterix AI...",
+  placeholder = "Message AstraMind AI...",
 }: ChatInputProps) {
   const [text, setText] = useState<string>("");
   const colors = useColors();

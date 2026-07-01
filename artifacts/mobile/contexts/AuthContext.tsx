@@ -21,8 +21,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const AUTH_TOKEN_KEY = "@asterix_auth_token";
-const AUTH_USER_KEY = "@asterix_auth_user";
+const AUTH_TOKEN_KEY = "@astramind_auth_token";
+const AUTH_USER_KEY = "@astramind_auth_user";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

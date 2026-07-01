@@ -59,7 +59,7 @@ export default function LoginScreen() {
         >
           <View style={styles.logoSection}>
             <Text style={[styles.logoMark, { color: colors.gold }]}>✦</Text>
-            <Text style={[styles.logoText, { color: colors.foreground }]}>ASTERIX AI</Text>
+            <Text style={[styles.logoText, { color: colors.foreground }]}>ASTRAMIND AI</Text>
             <Text style={[Typography.body, { color: colors.mutedForeground, marginTop: 8 }]}>
               Your intelligent assistant
             </Text>

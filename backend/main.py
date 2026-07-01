@@ -20,8 +20,8 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(
-    title="Asterix AI API",
-    description="Backend API for the Asterix AI mobile assistant",
+    title="AstraMind AI API",
+    description="Backend API for the AstraMind AI mobile assistant",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -46,7 +46,7 @@ app.include_router(settings.router, prefix="/api/settings", tags=["Settings"])
 
 @app.get("/api/healthz", tags=["Health"])
 async def health_check():
-    return {"status": "ok", "service": "asterix-ai"}
+    return {"status": "ok", "service": "astramind-ai"}
 
 
 if __name__ == "__main__":

@@ -31,7 +31,7 @@ interface ChatContextValue {
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
-const CONVERSATIONS_KEY = "@asterix_conversations";
+const CONVERSATIONS_KEY = "@astramind_conversations";
 
 function generateId() {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -102,7 +102,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       // Stub — will be wired to /api/chat in next phase
       await new Promise((r) => setTimeout(r, 1200));
-      const reply = "I'm Asterix AI. AI features will be wired in the next phase.";
+      const reply = "I'm AstraMind AI. AI features will be wired in the next phase.";
 
       const finalized = {
         ...updatedWithUser,

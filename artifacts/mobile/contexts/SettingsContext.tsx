@@ -25,7 +25,7 @@ interface SettingsContextValue {
   resetSettings: () => Promise<void>;
 }
 
-const SETTINGS_KEY = "@asterix_settings";
+const SETTINGS_KEY = "@astramind_settings";
 
 const defaultSettings: AppSettings = {
   selectedModel: "gpt-4o",
@@ -34,7 +34,7 @@ const defaultSettings: AppSettings = {
   voiceSpeed: 1.0,
   hapticFeedback: true,
   streamingEnabled: true,
-  systemPrompt: "You are Asterix AI, a helpful, precise, and professional AI assistant.",
+  systemPrompt: "You are AstraMind AI, a helpful, precise, and professional AI assistant.",
   maxTokens: 2048,
   temperature: 0.7,
   darkMode: true,

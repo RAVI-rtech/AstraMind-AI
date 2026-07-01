@@ -46,7 +46,7 @@ export function AsterixHeader({
 
         <View style={styles.center}>
           {showLogo ? (
-            <Text style={[styles.logo, { color: colors.gold }]}>✦ ASTERIX AI</Text>
+            <Text style={[styles.logo, { color: colors.gold }]}>✦ ASTRAMIND AI</Text>
           ) : (
             <Text style={[Typography.h3, { color: colors.foreground }]}>{title}</Text>
           )}
