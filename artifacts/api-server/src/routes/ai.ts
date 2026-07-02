@@ -173,43 +173,47 @@ const SUGGESTED_ACTIONS: Record<Category, string[]> = {
   general: ["Ask a follow-up", "Try a specific feature"],
 };
 
-// ── OpenAI call ────────────────────────────────────────────────────────────────
+// ── Gemini call ────────────────────────────────────────────────────────────────
 
 async function callAI(
   systemPrompt: string,
   messages: Array<{ role: string; content: string }>,
-  model: string,
+  _model: string,
   maxTokens: number,
   temperature: number,
 ): Promise<{ content: string; tokensUsed: number }> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return {
       content:
-        `[${model}] AI features are not yet configured. ` +
-        "Add OPENAI_API_KEY to the environment to enable real responses.",
+        "AI features are not yet configured. " +
+        "Add GEMINI_API_KEY to the environment to enable real responses.",
       tokensUsed: 0,
     };
   }
 
-  const { default: OpenAI } = await import("openai");
-  const client = new OpenAI({ apiKey });
+  const { GoogleGenAI } = await import("@google/genai");
+  const ai = new GoogleGenAI({ apiKey });
 
-  const mapped = messages.map((m) => ({
-    role: m.role as "user" | "assistant" | "system",
-    content: m.content,
+  // Map chat history — Gemini uses "model" instead of "assistant"
+  const contents = messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
   }));
 
-  const response = await client.chat.completions.create({
-    model: model.startsWith("gpt") ? model : "gpt-4o",
-    messages: [{ role: "system", content: systemPrompt }, ...mapped],
-    max_tokens: maxTokens,
-    temperature,
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents,
+    config: {
+      systemInstruction: systemPrompt,
+      maxOutputTokens: maxTokens,
+      temperature,
+    },
   });
 
   return {
-    content: response.choices[0]?.message?.content ?? "",
-    tokensUsed: response.usage?.total_tokens ?? 0,
+    content: response.text ?? "",
+    tokensUsed: response.usageMetadata?.totalTokenCount ?? 0,
   };
 }
 
@@ -225,8 +229,9 @@ router.post("/route", async (req: Request, res: Response): Promise<void> => {
 
   const classification = classify(body.message, body.force_category);
   const systemPrompt = SYSTEM_PROMPTS[classification.category];
-  const context = body.context ?? [];
-  const model = body.model ?? "gpt-4o";
+  // Always include the current message as the last "user" turn
+  const context = [...(body.context ?? []), { role: "user", content: body.message }];
+  const model = body.model ?? "gemini-2.5-flash";
   const maxTokens = body.max_tokens ?? 2048;
   const temperature = body.temperature ?? 0.7;
 
@@ -272,10 +277,10 @@ router.get("/categories", (_req: Request, res: Response): void => {
 router.get("/models", (_req: Request, res: Response): void => {
   res.json({
     models: [
-      { id: "gpt-4o", name: "AstraMind AI", provider: "openai" },
-      { id: "gpt-4o-mini", name: "AstraMind AI Mini", provider: "openai" },
-      { id: "claude-3-5-sonnet", name: "AstraMind AI 3.5", provider: "anthropic" },
-      { id: "gemini-pro", name: "AstraMind AI Pro", provider: "google" },
+      { id: "gemini-2.5-flash", name: "AstraMind AI", provider: "google", description: "Fastest · Recommended" },
+      { id: "gemini-2.5-pro", name: "AstraMind AI Pro", provider: "google", description: "Most capable" },
+      { id: "gemini-2.0-flash", name: "AstraMind AI 2.0", provider: "google", description: "Balanced" },
+      { id: "gemini-1.5-flash", name: "AstraMind AI Lite", provider: "google", description: "Efficient" },
     ],
   });
 });

@@ -4,7 +4,7 @@ Classifier Service — determines the category of a user request.
 Strategy (in order):
   1. If the caller supplied force_category → return immediately with method="forced"
   2. Keyword/pattern scoring → fast, no API key needed
-  3. If confidence < threshold AND an AI key is available → AI-based re-classification
+  3. If confidence < threshold AND GEMINI_API_KEY is set → AI-based re-classification
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ from app.schemas.ai_router import ClassificationResult, RequestCategory
 
 
 # ── Keyword tables ─────────────────────────────────────────────────────────────
-# Each entry: (pattern, weight)   — weight is added to that category's score
 
 _RULES: dict[RequestCategory, list[tuple[str, float]]] = {
     RequestCategory.CODE: [
@@ -120,12 +119,11 @@ _RULES: dict[RequestCategory, list[tuple[str, float]]] = {
         (r"\bchat\b", 0.8),
     ],
     RequestCategory.GENERAL: [
-        # Always gets a small baseline score so nothing returns 0
         (r".*", 0.2),
     ],
 }
 
-_CONFIDENCE_THRESHOLD = 0.55  # below this → try AI classification if key available
+_CONFIDENCE_THRESHOLD = 0.55
 
 
 class ClassifierService:
@@ -150,8 +148,8 @@ class ClassifierService:
         # 2. Keyword scoring
         result = self._keyword_classify(message)
 
-        # 3. AI re-classification when confidence is low and a key exists
-        if result.confidence < _CONFIDENCE_THRESHOLD and self._has_ai_key():
+        # 3. AI re-classification when confidence is low and Gemini key exists
+        if result.confidence < _CONFIDENCE_THRESHOLD and settings.GEMINI_API_KEY:
             try:
                 ai_result = await self._ai_classify(message, context or [])
                 if ai_result.confidence > result.confidence:
@@ -189,14 +187,7 @@ class ClassifierService:
             reasoning=f"Keyword scoring selected '{best_key}' with confidence {confidence:.2%}.",
         )
 
-    # ── AI classifier (optional enhancement) ─────────────────────────────────
-
-    def _has_ai_key(self) -> bool:
-        return bool(
-            settings.OPENAI_API_KEY
-            or settings.ANTHROPIC_API_KEY
-            or settings.GOOGLE_API_KEY
-        )
+    # ── Gemini AI classifier (optional enhancement) ───────────────────────────
 
     async def _ai_classify(
         self, message: str, context: list[dict[str, str]]
@@ -213,70 +204,56 @@ class ClassifierService:
 
         context_text = ""
         if context:
-            last = context[-3:]  # use last 3 turns for context
-            context_text = "\n".join(f"{t['role'].upper()}: {t['content']}" for t in last)
+            last = context[-3:]
+            context_text = "\n".join(
+                f"{t['role'].upper()}: {t['content']}" for t in last
+            )
             context_text = f"\nRecent context:\n{context_text}\n"
 
         prompt = f"{context_text}User message: {message}"
-
-        raw = await self._call_ai(system_prompt, prompt)
+        raw = await self._call_gemini(system_prompt, prompt)
         return self._parse_ai_response(raw)
 
-    async def _call_ai(self, system_prompt: str, prompt: str) -> str:
-        if settings.OPENAI_API_KEY:
-            from openai import AsyncOpenAI
-            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-            resp = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt},
-                ],
-                max_tokens=200,
+    async def _call_gemini(self, system_prompt: str, prompt: str) -> str:
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                max_output_tokens=200,
                 temperature=0.1,
-            )
-            return resp.choices[0].message.content or ""
-
-        if settings.ANTHROPIC_API_KEY:
-            import anthropic
-            client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-            resp = await client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                system=system_prompt,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=200,
-            )
-            return resp.content[0].text if resp.content else ""
-
-        if settings.GOOGLE_API_KEY:
-            import google.generativeai as genai
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
-            model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_prompt)
-            resp = await model.generate_content_async(prompt)
-            return resp.text
-
-        return ""
+            ),
+        )
+        return response.text or ""
 
     def _parse_ai_response(self, raw: str) -> ClassificationResult:
-        import json, re as _re
+        import json
 
         try:
-            data: dict[str, Any] = json.loads(raw.strip())
-            category = RequestCategory(data.get("category", "general"))
-            confidence = float(data.get("confidence", 0.7))
-            reasoning = str(data.get("reasoning", ""))
+            # Strip markdown code fences if present
+            cleaned = raw.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("```")[1]
+                if cleaned.startswith("json"):
+                    cleaned = cleaned[4:]
+            data = json.loads(cleaned)
+            category = RequestCategory(data["category"])
             return ClassificationResult(
                 category=category,
-                confidence=min(confidence, 1.0),
-                scores={category.value: confidence},
+                confidence=float(data.get("confidence", 0.7)),
+                scores={c.value: (float(data.get("confidence", 0.7)) if c == category else 0.0) for c in RequestCategory},
                 method="ai",
-                reasoning=reasoning,
+                reasoning=data.get("reasoning", "AI classification."),
             )
         except Exception:
             return ClassificationResult(
                 category=RequestCategory.GENERAL,
-                confidence=0.4,
-                scores={},
+                confidence=0.3,
+                scores={c.value: 0.0 for c in RequestCategory},
                 method="ai",
-                reasoning="AI classification parsing failed.",
+                reasoning="AI response could not be parsed; defaulting to general.",
             )

@@ -1,55 +1,43 @@
 """
-Image service — analyze, generate, edit, and OCR.
-
-Stubbed until API keys are configured.
+Image service — analyze (Gemini Vision), OCR (Tesseract), generate/edit (stubbed).
 """
 
 import base64
 import io
-from typing import Any, Literal
+from typing import Any
 
 from app.core.config import settings
 
 
 class ImageService:
     async def analyze(self, image_bytes: bytes) -> dict[str, Any]:
-        """Analyze an image using OpenAI Vision."""
-        if not settings.OPENAI_API_KEY:
+        """Analyze an image using Gemini Vision."""
+        if not settings.GEMINI_API_KEY:
             return {
-                "description": "[Image analysis requires OPENAI_API_KEY in .env]",
+                "description": "[Image analysis requires GEMINI_API_KEY in .env]",
                 "objects": [],
                 "colors": [],
                 "text_detected": None,
             }
 
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
         b64 = base64.b64encode(image_bytes).decode()
-        response = await client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
-                        },
-                        {
-                            "type": "text",
-                            "text": (
-                                "Describe this image in detail. List the main objects you see, "
-                                "the dominant colors, and any text present."
-                            ),
-                        },
-                    ],
-                }
+
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                types.Part.from_text(
+                    "Describe this image in detail. List the main objects you see, "
+                    "the dominant colors, and any text present."
+                ),
             ],
-            max_tokens=512,
         )
-        content = response.choices[0].message.content or ""
         return {
-            "description": content,
+            "description": response.text or "",
             "objects": [],
             "colors": [],
             "text_detected": None,
@@ -62,27 +50,13 @@ class ImageService:
         quality: str = "standard",
         style: str = "vivid",
     ) -> dict[str, Any]:
-        """Generate an image using DALL-E 3."""
-        if not settings.OPENAI_API_KEY:
-            return {
-                "image_url": "",
-                "revised_prompt": "[Image generation requires OPENAI_API_KEY in .env]",
-            }
-
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        response = await client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size=size,  # type: ignore[arg-type]
-            quality=quality,  # type: ignore[arg-type]
-            style=style,  # type: ignore[arg-type]
-            n=1,
-        )
-        image_data = response.data[0]
+        """Image generation is not available with the Gemini backend (stubbed)."""
         return {
-            "image_url": image_data.url or "",
-            "revised_prompt": image_data.revised_prompt,
+            "image_url": "",
+            "revised_prompt": (
+                "[Image generation is not available with the Gemini backend. "
+                "Use the Image tab to generate images via a dedicated service.]"
+            ),
         }
 
     async def ocr(self, image_bytes: bytes) -> dict[str, Any]:
@@ -102,16 +76,8 @@ class ImageService:
             }
 
     async def edit(self, image_bytes: bytes, prompt: str) -> dict[str, Any]:
-        """Edit an image using DALL-E."""
-        if not settings.OPENAI_API_KEY:
-            return {"image_url": "", "error": "OPENAI_API_KEY not configured"}
-
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        response = await client.images.edit(
-            image=("image.png", image_bytes, "image/png"),
-            prompt=prompt,
-            n=1,
-            size="1024x1024",
-        )
-        return {"image_url": response.data[0].url or ""}
+        """Image editing is not available with the Gemini backend (stubbed)."""
+        return {
+            "image_url": "",
+            "error": "Image editing is not available with the Gemini backend.",
+        }

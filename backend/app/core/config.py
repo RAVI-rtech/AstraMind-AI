@@ -26,10 +26,8 @@ class Settings(BaseSettings):
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str = "sqlite+aiosqlite:///./asterix_ai.db"
 
-    # ── AI Providers (set via .env) ───────────────────────────────────────────
-    OPENAI_API_KEY: str = ""
-    ANTHROPIC_API_KEY: str = ""
-    GOOGLE_API_KEY: str = ""
+    # ── AI Provider ───────────────────────────────────────────────────────────
+    GEMINI_API_KEY: str = ""
 
     # ── Storage ───────────────────────────────────────────────────────────────
     UPLOAD_DIR: str = "./uploads"

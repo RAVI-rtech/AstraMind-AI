@@ -1,102 +1,68 @@
 """
-AI Service — routes completions to OpenAI, Anthropic, or Google AI.
+AI Service — calls Google Gemini 2.5 Flash for all completions.
 
-AI provider calls are stubbed until API keys are configured in .env.
+Stubbed until GEMINI_API_KEY is set in .env.
 """
 
-from typing import Any, Literal
+from typing import Any
 
 from app.core.config import settings
+
+GEMINI_MODEL = "gemini-2.5-flash"
 
 
 class AIService:
     async def complete(
         self,
         prompt: str,
-        model: Literal["gpt-4o", "gpt-4o-mini", "claude-3-5-sonnet", "gemini-pro"],
+        model: str,
         system_prompt: str,
         max_tokens: int,
         temperature: float,
     ) -> dict[str, Any]:
-        """Route to the correct AI provider based on the model name."""
-        if model.startswith("gpt"):
-            return await self._openai_complete(prompt, model, system_prompt, max_tokens, temperature)
-        elif model.startswith("claude"):
-            return await self._anthropic_complete(prompt, model, system_prompt, max_tokens, temperature)
-        elif model.startswith("gemini"):
-            return await self._google_complete(prompt, model, system_prompt, max_tokens, temperature)
-        else:
-            raise ValueError(f"Unknown model: {model}")
+        """Generate a completion using Gemini 2.5 Flash."""
+        return await self._gemini_complete(prompt, system_prompt, max_tokens, temperature)
 
-    async def _openai_complete(
-        self, prompt: str, model: str, system_prompt: str, max_tokens: int, temperature: float
+    async def _gemini_complete(
+        self,
+        prompt: str,
+        system_prompt: str,
+        max_tokens: int,
+        temperature: float,
     ) -> dict[str, Any]:
-        if not settings.OPENAI_API_KEY:
-            return self._stub_response(model)
+        if not settings.GEMINI_API_KEY:
+            return self._stub_response()
 
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        response = await client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=max_tokens,
-            temperature=temperature,
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        response = await client.aio.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                max_output_tokens=max_tokens,
+                temperature=temperature,
+            ),
         )
         return {
-            "content": response.choices[0].message.content or "",
-            "model": model,
-            "tokens_used": response.usage.total_tokens if response.usage else 0,
-        }
-
-    async def _anthropic_complete(
-        self, prompt: str, model: str, system_prompt: str, max_tokens: int, temperature: float
-    ) -> dict[str, Any]:
-        if not settings.ANTHROPIC_API_KEY:
-            return self._stub_response(model)
-
-        import anthropic
-        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = await client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            system=system_prompt,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=max_tokens,
-        )
-        return {
-            "content": response.content[0].text if response.content else "",
-            "model": model,
-            "tokens_used": response.usage.input_tokens + response.usage.output_tokens,
-        }
-
-    async def _google_complete(
-        self, prompt: str, model: str, system_prompt: str, max_tokens: int, temperature: float
-    ) -> dict[str, Any]:
-        if not settings.GOOGLE_API_KEY:
-            return self._stub_response(model)
-
-        import google.generativeai as genai
-        genai.configure(api_key=settings.GOOGLE_API_KEY)
-        gemini = genai.GenerativeModel(
-            model_name="gemini-1.5-pro",
-            system_instruction=system_prompt,
-        )
-        response = await gemini.generate_content_async(prompt)
-        return {
-            "content": response.text,
-            "model": model,
-            "tokens_used": 0,
+            "content": response.text or "",
+            "model": GEMINI_MODEL,
+            "tokens_used": (
+                response.usage_metadata.total_token_count
+                if response.usage_metadata
+                else 0
+            ),
         }
 
     @staticmethod
-    def _stub_response(model: str) -> dict[str, Any]:
+    def _stub_response() -> dict[str, Any]:
         return {
             "content": (
-                f"[{model}] AI features are not yet configured. "
-                "Add your API keys to the backend .env file to enable them."
+                "AI features are not yet configured. "
+                "Add GEMINI_API_KEY to backend/.env to enable real responses."
             ),
-            "model": model,
+            "model": GEMINI_MODEL,
             "tokens_used": 0,
         }
