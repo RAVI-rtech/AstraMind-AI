@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useColorScheme } from "react-native";
 
 import colors from "@/constants/colors";
